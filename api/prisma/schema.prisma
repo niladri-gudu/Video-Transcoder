@@ -13,3 +13,70 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  passwordHash  String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  videos        Video[]
+}
+
+model Video {
+  id                      String   @id @default(uuid())
+  userId                  String
+  title                   String
+  rawS3key                String
+  status                  String   // pending, processing, completed, failed
+  duration                Int?
+  filesize                BigInt?
+  thumbnailS3key          String?
+  failureReason           String?
+  processingStartedAt     DateTime?
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user              User     @relation(fields: [userId], references: [id])
+  variants               VideoVariant[]
+  jobs                   TranscodingJob[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+model VideoVariant {
+  id         String   @id @default(uuid())
+  videoId    String
+  resolution String   // 480p, 720p, 1080p
+  s3Key      String
+  fileSize   BigInt?
+  codec      String?
+  bitrate    Int?
+
+  video      Video    @relation(fields: [videoId], references: [id])
+
+  @@unique([videoId, resolution])
+  @@index([videoId])
+}
+
+model TranscodingJob {
+  id               String   @id @default(uuid())
+  videoId          String
+  status           String   // queued, processing, completed, failed
+  priority         Int      @default(0)
+  retryCount       Int      @default(0)
+  lastError        String?
+  workerId         String?
+  idempotencyKey   String   @unique
+  lockedAt         DateTime?
+  startedAt        DateTime?
+  completedAt      DateTime?
+
+  video            Video    @relation(fields: [videoId], references: [id])
+
+  @@index([videoId])
+  @@index([status, priority])
+}
