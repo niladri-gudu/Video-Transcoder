@@ -6,9 +6,9 @@
 
     /* Environment Settings */
     "target": "ESNext",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "lib": ["ESNext", "DOM"], // Add "DOM" if you are using React/JSX
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ESNext"],
     "types": ["node"],
 
     /* Other Outputs */
@@ -37,8 +37,8 @@
     /* Interop & Performance */
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "skipLibCheck": true
-  , "noUncheckedSideEffectImports": true
+    "skipLibCheck": true,
+    "noUncheckedSideEffectImports": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

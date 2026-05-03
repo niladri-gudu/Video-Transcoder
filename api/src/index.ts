@@ -1,6 +1,8 @@
 import Fastify from "fastify";
 import "dotenv/config";
-import { prisma } from "./lib/prisma.ts";
+import { prisma } from "./lib/prisma";
+import { randomUUID } from "crypto";
+import { generateUploadUrl } from "./lib/s3";
 
 const app = Fastify({
   logger: true,
@@ -32,14 +34,66 @@ app.post(
       password: string;
     };
 
-    const user = await prisma.user.create({
+    try {
+      const user = await prisma.user.create({
+        data: {
+          email,
+          passwordHash: password,
+        },
+      });
+
+      return user;
+    } catch (error) {
+      if (
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
+        (error as { code?: string }).code === "P2002"
+      ) {
+        return reply.status(400).send({ error: "User already exists" });
+      }
+
+      return reply.status(500).send({ error: "Internal server error" });
+    }
+  },
+);
+
+app.post(
+  "/videos/initiate-upload",
+  {
+    schema: {
+      body: {
+        type: "object",
+        required: ["title"],
+        properties: {
+          title: { type: "string" },
+        },
+      },
+    },
+  },
+  async (request, reply) => {
+    const { title } = request.body as { title: string };
+
+    const videoId = randomUUID();
+
+    const s3key = `raw/${videoId}.mp4`;
+
+    const video = await prisma.video.create({
       data: {
-        email,
-        passwordHash: password,
+        id: videoId,
+        title,
+        rawS3key: s3key,
+        status: "pending",
+        userId: "39ceb110-445c-4ee9-a57f-066a8d63d6c7",
       },
     });
 
-    return user;
+    const uploadUrl = await generateUploadUrl(s3key);
+
+    return {
+      videoId,
+      uploadUrl,
+    };
   },
 );
 
