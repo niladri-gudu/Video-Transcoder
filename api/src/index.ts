@@ -3,6 +3,7 @@ import "dotenv/config";
 import { prisma } from "./lib/prisma";
 import { randomUUID } from "crypto";
 import { generateUploadUrl } from "./lib/s3";
+import { videoQueue } from "./queue/video.queue";
 
 const app = Fastify({
   logger: true,
@@ -89,6 +90,13 @@ app.post(
     });
 
     const uploadUrl = await generateUploadUrl(s3key);
+
+    const job = await videoQueue.add("transcode", {
+      videoId,
+      s3key,
+    });
+
+    console.log("Job added:", job.id);
 
     return {
       videoId,
