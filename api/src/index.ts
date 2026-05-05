@@ -6,6 +6,11 @@ import { generateUploadUrl } from "./lib/s3";
 import { videoQueue } from "./queue/video.queue";
 import { s3 } from "./lib/s3";
 import { HeadObjectCommand } from "@aws-sdk/client-s3";
+import {
+  initiateMultipartUpload,
+  getMultipartUploadUrls,
+  completeMultipartUpload,
+} from "./lib/s3-multipart";
 
 const app = Fastify({
   logger: true,
@@ -153,6 +158,67 @@ app.post("/videos/:id/confirm-upload", async (request, reply) => {
   );
 
   return reply.send({ success: true });
+});
+
+app.post("/videos/multipart/initiate", async (request, reply) => {
+  const { fileName } = request.body as { fileName: string };
+
+  console.log("Initiating multipart upload for file:", fileName);
+
+  const videoId = randomUUID();
+  const ext = fileName.split(".").pop();
+
+  const key = `raw/${videoId}.${ext}`;
+
+  await prisma.video.create({
+    data: {
+      id: videoId,
+      title: "Untitled",
+      rawS3key: key,
+      status: "pending",
+      userId: "39ceb110-445c-4ee9-a57f-066a8d63d6c7",
+    },
+  });
+
+  const { uploadId } = await initiateMultipartUpload(key);
+
+  return { videoId, uploadId, key };
+});
+
+app.post("/videos/multipart/urls", async (request, reply) => {
+  const { key, uploadId, partCount } = request.body as {
+    key: string;
+    uploadId: string;
+    partCount: number;
+  };
+
+  const urls = await getMultipartUploadUrls(key, uploadId, partCount);
+
+  return { urls };
+});
+
+app.post("/videos/multipart/complete", async (request, reply) => {
+  const { key, uploadId, parts, videoId } = request.body as {
+    key: string;
+    uploadId: string;
+    videoId: string;
+    parts: { ETag: string; PartNumber: number }[];
+  };
+
+  await completeMultipartUpload(key, uploadId, parts);
+
+  await videoQueue.add(
+    "transcode",
+    {
+      videoId,
+      s3Key: key,
+    },
+    {
+      jobId: videoId,
+    },
+  );
+
+  return { success: true };
 });
 
 const start = async () => {
