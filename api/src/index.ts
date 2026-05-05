@@ -67,19 +67,40 @@ app.post(
     schema: {
       body: {
         type: "object",
-        required: ["title"],
+        required: ["title", "fileName", "mimeType"],
         properties: {
           title: { type: "string" },
+          fileName: { type: "string" },
+          mimeType: { type: "string" },
         },
       },
     },
   },
   async (request, reply) => {
-    const { title } = request.body as { title: string };
+    const { title, fileName, mimeType } = request.body as {
+      title: string;
+      fileName: string;
+      mimeType: string;
+    };
 
+    const allowedTypes = [
+      "video/mp4",
+      "video/quicktime",
+      "video/x-matroska",
+      "video/webm",
+    ];
+
+    if (!allowedTypes.includes(mimeType)) {
+      return reply.status(400).send({
+        error: "Unsupported video format",
+      });
+    }
+
+    const ext = fileName.split(".").pop();
+    
     const videoId = randomUUID();
 
-    const s3Key = `raw/${videoId}.mp4`;
+    const s3Key = `raw/${videoId}.${ext}`;
 
     await prisma.video.create({
       data: {

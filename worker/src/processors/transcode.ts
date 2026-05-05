@@ -24,6 +24,28 @@ export const transcodeProcessor = async (job: any) => {
     await downloadFromS3(s3Key, inputPath);
     console.log("⬇️ Downloaded");
 
+    console.log("🔍 Validating input file...");
+
+    let isValidVideo = false;
+
+    try {
+      await runFFmpeg(`ffmpeg -i "${inputPath}"`);
+    } catch (err: any) {
+      const stderr = err?.stderr || "";
+
+      console.log("Validation stderr:", stderr);
+
+      if (stderr.includes("Video:")) {
+        isValidVideo = true;
+      }
+    }
+
+    if (!isValidVideo) {
+      throw new Error("Invalid video file (no video stream)");
+    }
+
+    console.log("✅ File validation passed");
+
     await runFFmpeg(
       `ffmpeg -i "${inputPath}" -vf scale=-2:480 -c:v libx264 -preset fast -crf 23 "${output480pPath}"`,
     );

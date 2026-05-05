@@ -8,7 +8,7 @@ export const runFFmpeg = (command: string) => {
 
       if (error) {
         console.error("FFmpeg error:", error);
-        return reject(error);
+        return reject({ error, stdout, stderr });
       }
 
       resolve(stdout);
