@@ -1,14 +1,40 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "Node16",
-    "moduleResolution": "Node16",
+    /* Environment & Target */
+    "target": "ESNext", // Modern Node.js versions (18+) support this fully
+    "module": "ESNext", // Standard for modern Node backend development
+    "moduleResolution": "bundler",
+    "lib": ["ESNext"],
+    "types": ["node"],
+
+    /* File Layout */
     "rootDir": "./src",
     "outDir": "./dist",
+
+    /* Stricter Typechecking (From your previous project) */
     "strict": true,
+    "noUncheckedIndexedAccess": true, // Great for handling dynamic data safely
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+
+    /* Interop & Performance */
     "esModuleInterop": true,
-    "types": ["node"],
-    "skipLibCheck": true
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+
+    /* Output Settings */
+    "sourceMap": true, // Essential for debugging FFmpeg logic
+    "declaration": true,
+    "removeComments": true,
+
+    /* The "No Extension" compromise */
+    // If you hate adding .js extensions, keep moduleResolution as "bundler"
+    // and module as "ESNext", but ensure your runner (like tsx) supports it.
+    // Otherwise, stick to NodeNext for maximum stability.
+    "verbatimModuleSyntax": true
   },
-  "include": ["src"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

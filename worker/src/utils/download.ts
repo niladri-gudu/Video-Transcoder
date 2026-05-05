@@ -1,5 +1,4 @@
 import fs from "fs";
-import path from "path";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { s3 } from "../lib/s3";
 

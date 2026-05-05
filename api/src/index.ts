@@ -4,6 +4,8 @@ import { prisma } from "./lib/prisma";
 import { randomUUID } from "crypto";
 import { generateUploadUrl } from "./lib/s3";
 import { videoQueue } from "./queue/video.queue";
+import { s3 } from "./lib/s3";
+import { HeadObjectCommand } from "@aws-sdk/client-s3";
 
 const app = Fastify({
   logger: true,
@@ -77,26 +79,19 @@ app.post(
 
     const videoId = randomUUID();
 
-    const s3key = `raw/${videoId}.mp4`;
+    const s3Key = `raw/${videoId}.mp4`;
 
-    const video = await prisma.video.create({
+    await prisma.video.create({
       data: {
         id: videoId,
         title,
-        rawS3key: s3key,
+        rawS3key: s3Key,
         status: "pending",
         userId: "39ceb110-445c-4ee9-a57f-066a8d63d6c7",
       },
     });
 
-    const uploadUrl = await generateUploadUrl(s3key);
-
-    const job = await videoQueue.add("transcode", {
-      videoId,
-      s3key,
-    });
-
-    console.log("Job added:", job.id);
+    const uploadUrl = await generateUploadUrl(s3Key);
 
     return {
       videoId,
@@ -104,6 +99,34 @@ app.post(
     };
   },
 );
+
+app.post("/videos/:id/confirm-upload", async (request, reply) => {
+  const { id } = request.params as { id: string };
+
+  const video = await prisma.video.findUnique({ where: { id } });
+
+  if (!video) {
+    return reply.status(404).send({ error: "Video not found" });
+  }
+
+  try {
+    await s3.send(
+      new HeadObjectCommand({
+        Bucket: process.env.AWS_BUCKET_NAME,
+        Key: video.rawS3key,
+      }),
+    );
+  } catch (error) {
+    return reply.status(400).send({ error: "File not uploaded yet" });
+  }
+
+  await videoQueue.add("transcode", {
+    videoId: video.id,
+    s3Key: video.rawS3key,
+  });
+
+  return reply.send({ success: true });
+});
 
 const start = async () => {
   try {

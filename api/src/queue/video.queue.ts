@@ -6,6 +6,6 @@ const connection = new Redis({
   port: parseInt(process.env.REDIS_PORT!, 10),
 });
 
-export const videoQueue = new Queue("video-processing", {
+export const videoQueue = new Queue("transcode", {
   connection,
 });
