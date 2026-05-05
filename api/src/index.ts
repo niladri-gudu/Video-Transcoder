@@ -97,7 +97,7 @@ app.post(
     }
 
     const ext = fileName.split(".").pop();
-    
+
     const videoId = randomUUID();
 
     const s3Key = `raw/${videoId}.${ext}`;
@@ -141,10 +141,16 @@ app.post("/videos/:id/confirm-upload", async (request, reply) => {
     return reply.status(400).send({ error: "File not uploaded yet" });
   }
 
-  await videoQueue.add("transcode", {
-    videoId: video.id,
-    s3Key: video.rawS3key,
-  });
+  await videoQueue.add(
+    "transcode",
+    {
+      videoId: video.id,
+      s3Key: video.rawS3key,
+    },
+    {
+      jobId: video.id,
+    },
+  );
 
   return reply.send({ success: true });
 });

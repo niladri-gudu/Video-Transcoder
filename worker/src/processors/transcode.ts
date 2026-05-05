@@ -5,6 +5,12 @@ import { downloadFromS3 } from "../utils/download";
 import { uploadToS3 } from "../utils/upload";
 import { prisma } from "../lib/prisma";
 
+const RESOLUTIONS = [
+  { label: "480p", height: 480 },
+  { label: "720p", height: 720 },
+  { label: "1080p", height: 1080 },
+];
+
 export const transcodeProcessor = async (job: any) => {
   const { videoId, s3Key } = job.data;
 
@@ -46,24 +52,30 @@ export const transcodeProcessor = async (job: any) => {
 
     console.log("✅ File validation passed");
 
-    await runFFmpeg(
-      `ffmpeg -i "${inputPath}" -vf scale=-2:480 -c:v libx264 -preset fast -crf 23 "${output480pPath}"`,
-    );
+    for (const res of RESOLUTIONS) {
+      const outputPath = path.join("tmp", `${videoId}-${res.label}.mp4`);
 
-    console.log("🎬 480p done");
+      console.log(`🎬 Transcoding to ${res.label}...`);
 
-    const processedKey = `processed/480p/${videoId}.mp4`;
+      await runFFmpeg(
+        `ffmpeg -i "${inputPath}" -vf scale=-2:${res.height} -c:v libx264 -preset fast -crf 23 "${outputPath}"`,
+      );
 
-    await uploadToS3(output480pPath, processedKey);
-    console.log("⬆️ Uploaded to S3");
+      console.log(`✅ ${res.label} done`);
 
-    await prisma.videoVariant.create({
-      data: {
-        videoId,
-        resolution: "480p",
-        s3Key: processedKey,
-      },
-    });
+      const processedKey = `processed/${res.label}/${videoId}.mp4`;
+
+      await uploadToS3(outputPath, processedKey);
+      console.log(`⬆️ Uploaded to ${res.label}`);
+
+      await prisma.videoVariant.create({
+        data: {
+          videoId,
+          resolution: res.label,
+          s3Key: processedKey,
+        },
+      });
+    }
 
     await prisma.video.update({
       where: { id: videoId },
