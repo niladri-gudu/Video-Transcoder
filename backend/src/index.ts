@@ -6,6 +6,7 @@ import { generateUploadUrl } from "./lib/s3";
 import { videoQueue } from "./queue/video.queue";
 import { s3 } from "./lib/s3";
 import { HeadObjectCommand } from "@aws-sdk/client-s3";
+import cors from "@fastify/cors";
 import {
   initiateMultipartUpload,
   getMultipartUploadUrls,
@@ -15,6 +16,8 @@ import {
 const app = Fastify({
   logger: true,
 });
+
+app.register(cors);
 
 const PORT = parseInt(process.env.PORT || "3000", 10);
 
@@ -65,6 +68,33 @@ app.post(
     }
   },
 );
+
+app.get("/videos", async (request, reply) => {
+  const videos = await prisma.video.findMany({
+    orderBy: { createdAt: "desc" },
+    include: {
+      variants: true,
+    },
+  });
+
+  return videos;
+});
+
+app.get("/videos/:id", async (request, reply) => {
+  const { id } = request.params as { id: string };
+
+  const video = await prisma.video.findUnique({ where: { id } });
+
+  if (!video) {
+    return reply.status(404).send({ error: "Video not found" });
+  }
+
+  return {
+    id: video.id,
+    status: video.status,
+    title: video.title,
+  };
+});
 
 app.post(
   "/videos/initiate-upload",
