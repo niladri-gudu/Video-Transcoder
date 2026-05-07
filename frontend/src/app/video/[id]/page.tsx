@@ -1,4 +1,4 @@
-import VideoClient from "./VideoClient";
+import VideoClient from "../../../components/VideoClient";
 
 export default async function VideoPage({
   params,

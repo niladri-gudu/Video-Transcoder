@@ -1,3 +1,4 @@
+import { emitVideoProgress } from "../utils/progress";
 import path from "path";
 import fs from "fs";
 import { runFFmpeg } from "../utils/ffmpeg";
@@ -36,10 +37,18 @@ export const transcodeProcessor = async (job: any) => {
       data: { status: "processing" },
     });
 
+    await emitVideoProgress(videoId, 5, "Downloading video");
+
     await downloadFromS3(s3Key, inputPath);
+
+    await emitVideoProgress(videoId, 15, "Video downloaded");
+
     console.log("📥 Downloaded from S3:", s3Key);
 
+    await emitVideoProgress(videoId, 20, "Validating video");
+
     console.log("🔍 Validating input file...");
+
     let isValidVideo = false;
 
     try {
@@ -57,6 +66,8 @@ export const transcodeProcessor = async (job: any) => {
 
     console.log("✅ File validation passed");
 
+    await emitVideoProgress(videoId, 25, "Video validated");
+
     const thumbnailPath = path.join("tmp", `${videoId}.jpg`);
 
     const thumbnailPromise = generateThumbnail(
@@ -70,6 +81,12 @@ export const transcodeProcessor = async (job: any) => {
       const segmentPattern = path.join(hlsDir, `${res.label}_%03d.ts`);
 
       console.log(`🎬 Generating HLS ${res.label}...`);
+
+      await emitVideoProgress(
+        videoId,
+        res.label === "480p" ? 50 : res.label === "720p" ? 70 : 90,
+        `Processing ${res.label}`,
+      );
 
       await runFFmpeg(
         `ffmpeg -i "${inputPath}" \
@@ -129,6 +146,8 @@ export const transcodeProcessor = async (job: any) => {
 
     fs.writeFileSync(masterPath, masterContent);
 
+    await emitVideoProgress(videoId, 95, "Finalizing video");
+
     await uploadToS3(masterPath, `processed/hls/${videoId}/master.m3u8`);
 
     console.log("📤 Uploaded master playlist");
@@ -153,11 +172,15 @@ export const transcodeProcessor = async (job: any) => {
       data: { status: "completed" },
     });
 
+    await emitVideoProgress(videoId, 100, "Completed");
+
     console.log("🎉 Job completed");
 
     return { success: true };
   } catch (error) {
     console.error("❌ Processing failed:", error);
+
+    await emitVideoProgress(videoId, -1, "Processing failed");
 
     await prisma.video.update({
       where: { id: videoId },

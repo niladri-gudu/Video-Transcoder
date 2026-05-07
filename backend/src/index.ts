@@ -12,12 +12,48 @@ import {
   getMultipartUploadUrls,
   completeMultipartUpload,
 } from "./lib/s3-multipart";
+import { Server } from "socket.io";
+import { subscriber } from "./lib/pubsub";
 
 const app = Fastify({
   logger: true,
 });
 
 app.register(cors);
+
+const io = new Server({
+  cors: {
+    origin: "*",
+  },
+});
+
+io.on("connection", (socket) => {
+  console.log("Client connected:", socket.id);
+
+  socket.on("join-video", (videoId: string) => {
+    socket.join(videoId);
+
+    console.log(`Client ${socket.id} joined video room: ${videoId}`);
+  });
+
+  socket.on("disconnect", () => {
+    console.log("Client disconnected:", socket.id);
+  });
+});
+
+await subscriber.subscribe("video-progress");
+
+console.log("Subscribed to video-progress channel");
+
+subscriber.on("message", (channel, message) => {
+  if (channel !== "video-progress") return;
+
+  const data = JSON.parse(message);
+
+  console.log("Redis event", data);
+
+  io.to(data.videoId).emit("video-progress", data);
+});
 
 const PORT = parseInt(process.env.PORT || "3000", 10);
 
@@ -237,40 +273,35 @@ app.post("/videos/multipart/complete", async (request, reply) => {
 
   await completeMultipartUpload(key, uploadId, parts);
 
-  await Promise.all([
-    await videoQueue.add(
-      "transcode",
-      {
-        videoId,
-        s3Key: key,
-      },
-      {
-        jobId: videoId,
-      },
-    ),
-    await videoQueue.add(
-      "thumbnail",
-      {
-        videoId,
-        s3Key: key,
-      },
-      {
-        jobId: videoId,
-      },
-    ),
-  ]);
+  await videoQueue.add(
+    "transcode",
+    {
+      videoId,
+      s3Key: key,
+    },
+    {
+      jobId: `${videoId}-transcode`,
+    },
+  );
 
   return { success: true };
 });
 
 const start = async () => {
   try {
-    await app.listen({ port: PORT });
+    await app.listen({
+      port: PORT,
+    });
+
+    io.attach(app.server);
+
+    await subscriber.subscribe("video-progress");
+
+    console.log(`🚀 Server running on port ${PORT}`);
   } catch (error) {
     app.log.error(error);
     process.exit(1);
   }
-  console.log(`Server is running on port ${PORT}`);
 };
 
 start();
