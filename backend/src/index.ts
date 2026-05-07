@@ -237,16 +237,28 @@ app.post("/videos/multipart/complete", async (request, reply) => {
 
   await completeMultipartUpload(key, uploadId, parts);
 
-  await videoQueue.add(
-    "transcode",
-    {
-      videoId,
-      s3Key: key,
-    },
-    {
-      jobId: videoId,
-    },
-  );
+  await Promise.all([
+    await videoQueue.add(
+      "transcode",
+      {
+        videoId,
+        s3Key: key,
+      },
+      {
+        jobId: videoId,
+      },
+    ),
+    await videoQueue.add(
+      "thumbnail",
+      {
+        videoId,
+        s3Key: key,
+      },
+      {
+        jobId: videoId,
+      },
+    ),
+  ]);
 
   return { success: true };
 });

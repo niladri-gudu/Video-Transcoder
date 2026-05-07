@@ -21,6 +21,8 @@ export default function VideoCard({ video }: any) {
           <Image
             src={thumbnail}
             alt={video.title || "Video Thumbnail"}
+            width={1000}
+            height={600}
             className="w-full h-full object-cover"
           />
         ) : (

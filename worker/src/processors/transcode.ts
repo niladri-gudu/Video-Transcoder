@@ -4,6 +4,7 @@ import { runFFmpeg } from "../utils/ffmpeg";
 import { downloadFromS3 } from "../utils/download";
 import { uploadToS3 } from "../utils/upload";
 import { prisma } from "../lib/prisma";
+import { generateThumbnail } from "./thumbnail";
 
 const RESOLUTIONS = [
   { label: "480p", height: 480, bandwidth: 800000, resolution: "854x480" },
@@ -55,6 +56,14 @@ export const transcodeProcessor = async (job: any) => {
     }
 
     console.log("✅ File validation passed");
+
+    const thumbnailPath = path.join("tmp", `${videoId}.jpg`);
+
+    const thumbnailPromise = generateThumbnail(
+      inputPath,
+      thumbnailPath,
+      videoId,
+    );
 
     for (const res of RESOLUTIONS) {
       const playlistPath = path.join(hlsDir, `${res.label}.m3u8`);
@@ -124,9 +133,16 @@ export const transcodeProcessor = async (job: any) => {
 
     console.log("📤 Uploaded master playlist");
 
+    await thumbnailPromise;
+
     if (fs.existsSync(inputPath)) {
       fs.unlinkSync(inputPath);
       console.log("🧹 Deleted original file");
+    }
+
+    if (fs.existsSync(thumbnailPath)) {
+      fs.unlinkSync(thumbnailPath);
+      console.log("🧹 Deleted thumbnail file");
     }
 
     fs.rmSync(hlsDir, { recursive: true, force: true });
