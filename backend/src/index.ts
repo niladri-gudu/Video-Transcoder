@@ -129,6 +129,9 @@ app.get("/videos/:id", async (request, reply) => {
     id: video.id,
     status: video.status,
     title: video.title,
+    captionsUrl: video.captionsS3Key
+      ? `https://${process.env.AWS_BUCKET_NAME}.s3.ap-south-1.amazonaws.com/${video.captionsS3Key}`
+      : null,
   };
 });
 

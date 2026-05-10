@@ -6,6 +6,7 @@ import { downloadFromS3 } from "../utils/download";
 import { uploadToS3 } from "../utils/upload";
 import { prisma } from "../lib/prisma";
 import { generateThumbnail } from "./thumbnail";
+import { generateCaptions } from "../utils/captions";
 
 const RESOLUTIONS = [
   { label: "480p", height: 480, bandwidth: 800000, resolution: "854x480" },
@@ -74,6 +75,14 @@ export const transcodeProcessor = async (job: any) => {
       inputPath,
       thumbnailPath,
       videoId,
+    );
+
+    const captionsPromise = generateCaptions(inputPath, videoId).catch(
+      (error) => {
+        console.error("❌ Caption generation failed:", error);
+
+        return null;
+      },
     );
 
     for (const res of RESOLUTIONS) {
@@ -153,6 +162,7 @@ export const transcodeProcessor = async (job: any) => {
     console.log("📤 Uploaded master playlist");
 
     await thumbnailPromise;
+    await captionsPromise;
 
     if (fs.existsSync(inputPath)) {
       fs.unlinkSync(inputPath);

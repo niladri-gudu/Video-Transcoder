@@ -35,6 +35,8 @@ model Video {
   thumbnailS3key          String?
   failureReason           String?
   processingStartedAt     DateTime?
+  captionsS3Key           String?
+  transcript              String?
 
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt

@@ -23,9 +23,15 @@ importers:
       dotenv:
         specifier: ^17.4.2
         version: 17.4.2
+      form-data:
+        specifier: ^4.0.5
+        version: 4.0.5
       ioredis:
         specifier: ^5.10.1
         version: 5.10.1
+      openai:
+        specifier: ^6.37.0
+        version: 6.37.0
       prisma:
         specifier: ^6.19.3
         version: 6.19.3
@@ -886,6 +892,18 @@ packages:
 
   ohash@2.0.11:
     resolution: {integrity: sha512-RdR9FQrFwNBNXAr4GixM8YaRZRJ5PUWbKYbE5eOsrwAjJW0q2REGcf79oYPsLyskQCZG1PLN+S/K1V00joZAoQ==}
+
+  openai@6.37.0:
+    resolution: {integrity: sha512-0H5dEGFmmLv6KSd0W1w2nyL8WsLkX6yoLeQpU+dZAOuGcany5qkYQMmj35ZrKgb6yiyYqpUzFOpR8mZQkgqeEQ==}
+    hasBin: true
+    peerDependencies:
+      ws: ^8.18.0
+      zod: ^3.25 || ^4.0
+    peerDependenciesMeta:
+      ws:
+        optional: true
+      zod:
+        optional: true
 
   path-expression-matcher@1.5.0:
     resolution: {integrity: sha512-cbrerZV+6rvdQrrD+iGMcZFEiiSrbv9Tfdkvnusy6y0x0GKBXREFg/Y65GhIfm0tnLntThhzCnfKwp1WRjeCyQ==}
@@ -2167,6 +2185,8 @@ snapshots:
       tinyexec: 1.1.2
 
   ohash@2.0.11: {}
+
+  openai@6.37.0: {}
 
   path-expression-matcher@1.5.0: {}
 

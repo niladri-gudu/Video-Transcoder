@@ -3,7 +3,13 @@
 import { useEffect, useRef } from "react";
 import Hls from "hls.js";
 
-export default function VideoPlayer({ src }: { src: string }) {
+export default function VideoPlayer({
+  src,
+  captionsUrl,
+}: {
+  src: string;
+  captionsUrl?: string;
+}) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -26,7 +32,18 @@ export default function VideoPlayer({ src }: { src: string }) {
     <video
       ref={videoRef}
       controls
+      crossOrigin="anonymous"
       className="w-full rounded-2xl shadow-lg"
-    />
-  )
+    >
+      {captionsUrl && (
+        <track
+          kind="subtitles"
+          srcLang="en"
+          label="English"
+          src={captionsUrl}
+          default
+        />
+      )}
+    </video>
+  );
 }

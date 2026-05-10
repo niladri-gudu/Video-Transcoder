@@ -16,6 +16,7 @@ type VideoStatus =
 export default function VideoClient({ id }: { id: string }) {
   const [status, setStatus] = useState<VideoStatus>("loading");
   const [videoUrl, setVideoUrl] = useState("");
+  const [captionsUrl, setCaptionsUrl] = useState("");
   const [error, setError] = useState("");
 
   const [progress, setProgress] = useState(0);
@@ -33,6 +34,9 @@ export default function VideoClient({ id }: { id: string }) {
         if (data.status === "completed") {
           setVideoUrl(
             `https://video-transcoderrr.s3.ap-south-1.amazonaws.com/processed/hls/${id}/master.m3u8`,
+          );
+          setCaptionsUrl(
+            `https://video-transcoderrr.s3.ap-south-1.amazonaws.com/processed/captions/${id}.vtt`,
           );
         }
       } catch (error) {
@@ -57,6 +61,10 @@ export default function VideoClient({ id }: { id: string }) {
 
         setVideoUrl(
           `https://video-transcoderrr.s3.ap-south-1.amazonaws.com/processed/hls/${id}/master.m3u8`,
+        );
+
+        setCaptionsUrl(
+          `https://video-transcoderrr.s3.ap-south-1.amazonaws.com/processed/captions/${id}.vtt`,
         );
 
         return;
@@ -141,7 +149,7 @@ export default function VideoClient({ id }: { id: string }) {
   return (
     <div className="min-h-screen bg-black text-white p-6">
       <div className="max-w-5xl mx-auto space-y-4">
-        <VideoPlayer src={videoUrl} />
+        <VideoPlayer src={videoUrl} captionsUrl={captionsUrl} />
 
         <div className="flex items-center justify-between text-sm text-zinc-500">
           <span>Video ID: {id}</span>
