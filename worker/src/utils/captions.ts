@@ -19,16 +19,19 @@ export async function generateCaptions(inputPath: string, videoId: string) {
   await generateSubtitles(audioPath);
 
   const vttPath = `${audioPath}.vtt`;
+  const transcriptPath = `${audioPath}.txt`;
 
   const captionsKey = `processed/captions/${videoId}.vtt`;
+  const transcriptKey = `processed/transcripts/${videoId}.txt`;
 
   console.log("☁️ Uploading captions to S3...");
 
   await uploadToS3(vttPath, captionsKey);
+  await uploadToS3(transcriptPath, transcriptKey);
 
   await prisma.video.update({
     where: { id: videoId },
-    data: { captionsS3Key: captionsKey },
+    data: { captionsS3Key: captionsKey, transcriptS3Key: transcriptKey },
   });
 
   console.log("✅ Captions uploaded");
@@ -39,6 +42,10 @@ export async function generateCaptions(inputPath: string, videoId: string) {
 
   if (fs.existsSync(vttPath)) {
     fs.unlinkSync(vttPath);
+  }
+
+  if (fs.existsSync(transcriptPath)) {
+    fs.unlinkSync(transcriptPath);
   }
 
   console.log("🧹 Caption temp cleanup done");

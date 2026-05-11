@@ -10,6 +10,7 @@ export async function generateSubtitles(audioPath: string) {
         "-f",
         audioPath,
         "-ovtt",
+        "-otxt",
       ]
     );
 

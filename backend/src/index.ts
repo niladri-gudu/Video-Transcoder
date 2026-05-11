@@ -14,6 +14,8 @@ import {
 } from "./lib/s3-multipart";
 import { Server } from "socket.io";
 import { subscriber } from "./lib/pubsub";
+import { getTranscript } from "./utils/transcript";
+import { model } from "./lib/gemini";
 
 const app = Fastify({
   logger: true,
@@ -133,6 +135,40 @@ app.get("/videos/:id", async (request, reply) => {
       ? `https://${process.env.AWS_BUCKET_NAME}.s3.ap-south-1.amazonaws.com/${video.captionsS3Key}`
       : null,
   };
+});
+
+app.get("/videos/:id/chat", async (request, reply) => {
+  const { id } = request.params as { id: string };
+
+  const { message } = request.body as { message: string };
+
+  const video = await prisma.video.findUnique({ where: { id } });
+
+  if (!video?.transcriptS3Key) {
+    return reply.status(404).send({ error: "Transcript not found" });
+  }
+
+  const transcriptUrl = `https://${process.env.AWS_BUCKET_NAME}.s3.ap-south-1.amazonaws.com/${video.transcriptS3Key}`;
+
+  const transcript = await getTranscript(transcriptUrl);
+
+  const prompt = `
+    You are a helpful assistant that answers questions about the video based on the following transcript
+
+    VIDEO TRANSCRIPT:
+    ${transcript}
+
+    USER QUESTION:
+    ${message}
+
+    Answer clearly and concisely.
+    `;
+
+  const result = await model.generateContent(prompt);
+
+  const response = result.response.text();
+
+  return { response: response };
 });
 
 app.post(
