@@ -23,7 +23,7 @@ const app = Fastify({
 
 app.register(cors);
 
-const io = new Server({
+const io = new Server(app.server, {
   cors: {
     origin: "*",
   },
@@ -118,26 +118,7 @@ app.get("/videos", async (request, reply) => {
   return videos;
 });
 
-app.get("/videos/:id", async (request, reply) => {
-  const { id } = request.params as { id: string };
-
-  const video = await prisma.video.findUnique({ where: { id } });
-
-  if (!video) {
-    return reply.status(404).send({ error: "Video not found" });
-  }
-
-  return {
-    id: video.id,
-    status: video.status,
-    title: video.title,
-    captionsUrl: video.captionsS3Key
-      ? `https://${process.env.AWS_BUCKET_NAME}.s3.ap-south-1.amazonaws.com/${video.captionsS3Key}`
-      : null,
-  };
-});
-
-app.get("/videos/:id/chat", async (request, reply) => {
+app.post("/videos/:id/chat", async (request, reply) => {
   const { id } = request.params as { id: string };
 
   const { message } = request.body as { message: string };
@@ -169,6 +150,25 @@ app.get("/videos/:id/chat", async (request, reply) => {
   const response = result.response.text();
 
   return { response: response };
+});
+
+app.get("/videos/:id", async (request, reply) => {
+  const { id } = request.params as { id: string };
+
+  const video = await prisma.video.findUnique({ where: { id } });
+
+  if (!video) {
+    return reply.status(404).send({ error: "Video not found" });
+  }
+
+  return {
+    id: video.id,
+    status: video.status,
+    title: video.title,
+    captionsUrl: video.captionsS3Key
+      ? `https://${process.env.AWS_BUCKET_NAME}.s3.ap-south-1.amazonaws.com/${video.captionsS3Key}`
+      : null,
+  };
 });
 
 app.post(
@@ -331,10 +331,6 @@ const start = async () => {
     await app.listen({
       port: PORT,
     });
-
-    io.attach(app.server);
-
-    await subscriber.subscribe("video-progress");
 
     console.log(`🚀 Server running on port ${PORT}`);
   } catch (error) {
