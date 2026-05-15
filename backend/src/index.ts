@@ -270,6 +270,8 @@ app.post("/videos/multipart/initiate", async (request, reply) => {
 
   console.log("Initiating multipart upload for file:", fileName);
 
+  const title = fileName.replace(/\.[^/.]+$/, "");
+
   const videoId = randomUUID();
   const ext = fileName.split(".").pop();
 
@@ -278,7 +280,7 @@ app.post("/videos/multipart/initiate", async (request, reply) => {
   await prisma.video.create({
     data: {
       id: videoId,
-      title: "Untitled",
+      title: title,
       rawS3key: key,
       status: "pending",
       userId: "39ceb110-445c-4ee9-a57f-066a8d63d6c7",
