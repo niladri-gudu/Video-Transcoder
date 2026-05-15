@@ -99,13 +99,15 @@ export const transcodeProcessor = async (job: any) => {
 
       await runFFmpeg(
         `ffmpeg -i "${inputPath}" \
-          -vf scale=-2:${res.height} \
-          -c:v libx264 -c:a aac \
-          -preset fast -crf 23 \
-          -hls_time 6 \
-          -hls_playlist_type vod \
-          -hls_segment_filename "${segmentPattern}" \
-          "${playlistPath}"`,
+        -threads 2 \
+        -vf scale=-2:${res.height} \
+        -s ${res.resolution} \
+        -c:v libx264 -c:a aac \
+        -preset fast -crf 23 \
+        -hls_time 6 \
+        -hls_playlist_type vod \
+        -hls_segment_filename "${segmentPattern}" \
+        "${playlistPath}"`,
       );
 
       console.log(`✅ HLS ${res.label} done`);
@@ -150,7 +152,7 @@ export const transcodeProcessor = async (job: any) => {
       "#EXTM3U\n" +
       RESOLUTIONS.map(
         (r) =>
-          `#EXT-X-STREAM-INF:BANDWIDTH=${r.bandwidth},RESOLUTION=${r.resolution}\n${r.label}.m3u8`,
+          `#EXT-X-STREAM-INF:BANDWIDTH=${r.bandwidth},RESOLUTION=${r.resolution},CODECS="avc1.64001f,mp4a.40.2"\n${r.label}.m3u8`,
       ).join("\n");
 
     fs.writeFileSync(masterPath, masterContent);

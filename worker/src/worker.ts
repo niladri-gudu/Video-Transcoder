@@ -4,6 +4,10 @@ import { transcodeProcessor } from "./processors/transcode";
 
 export const worker = new Worker("transcode", transcodeProcessor, {
   connection,
+
+  lockDuration: 1800000,
+
+  stalledInterval: 30000,
 });
 
 worker.on("completed", (job) => {
