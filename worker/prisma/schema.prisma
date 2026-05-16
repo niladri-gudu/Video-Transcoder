@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
   output   = "../src/generated/prisma"
@@ -14,71 +8,41 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id            String   @id @default(uuid())
-  email         String   @unique
-  passwordHash  String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  videos        Video[]
-}
-
 model Video {
-  id                      String   @id @default(uuid())
-  userId                  String
-  title                   String
-  rawS3key                String
-  status                  String   // pending, processing, completed, failed
-  duration                Int?
-  filesize                BigInt?
-  thumbnailS3key          String?
-  failureReason           String?
-  processingStartedAt     DateTime?
-  captionsS3Key           String?
-  transcriptS3Key         String?
+  id String @id @default(uuid())
 
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  title String
 
-  user              User     @relation(fields: [userId], references: [id])
-  variants               VideoVariant[]
-  jobs                   TranscodingJob[]
+  rawS3key String
 
-  @@index([userId])
+  status String
+
+  thumbnailS3key String?
+
+  captionsS3Key String?
+
+  transcriptS3Key String?
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  variants VideoVariant[]
+
   @@index([status])
 }
 
 model VideoVariant {
-  id         String   @id @default(uuid())
-  videoId    String
-  resolution String   // 480p, 720p, 1080p
-  s3Key      String
-  fileSize   BigInt?
-  codec      String?
-  bitrate    Int?
+  id String @id @default(uuid())
 
-  video      Video    @relation(fields: [videoId], references: [id])
+  videoId String
+
+  resolution String
+
+  s3Key String
+
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
 
   @@unique([videoId, resolution])
   @@index([videoId])
-}
-
-model TranscodingJob {
-  id               String   @id @default(uuid())
-  videoId          String
-  status           String   // queued, processing, completed, failed
-  priority         Int      @default(0)
-  retryCount       Int      @default(0)
-  lastError        String?
-  workerId         String?
-  idempotencyKey   String   @unique
-  lockedAt         DateTime?
-  startedAt        DateTime?
-  completedAt      DateTime?
-
-  video            Video    @relation(fields: [videoId], references: [id])
-
-  @@index([videoId])
-  @@index([status, priority])
 }
