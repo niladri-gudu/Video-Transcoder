@@ -169,7 +169,7 @@ export default function VideoClient({ id }: { id: string }) {
       <div className="min-h-screen bg-[#09090b] text-white flex flex-col gap-4 items-center justify-center">
         <Loader2 className="h-8 w-8 text-blue-500 animate-spin" />
         <p className="text-sm text-zinc-400 font-mono tracking-wider">
-          RESOLVING PIPELINE INFRASTRUCTURE...
+          Loading video data...
         </p>
       </div>
     );
